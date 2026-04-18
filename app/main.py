@@ -1,4 +1,6 @@
 from fastapi import FastAPI,Depends
+from sympy.integrals.meijerint_doc import category
+
 from app.models import Expense, ExpenseCreate
 from app.auth import verify_admin
 import json
@@ -59,3 +61,51 @@ async def stats(admin: str = Depends(verify_admin)):
         else:
             stats[cat] = amt
     return stats
+
+
+@app.get("/search")
+async def search(category: str):
+    filtered_expenses = []
+    filename = "expenses.json"
+    try:
+        with open(filename, 'r', encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        return {"message":"Данные не удалось прочитать"}
+
+    for item in data:
+        if item["category"] == category: # если элемент равен тому который ищем добавляем в список
+            filtered_expenses.append(item)
+    return filtered_expenses
+
+
+@app.get("/expenses")
+async def expenses(min_price: float):
+    expenses_product = []
+    filename = "expenses.json"
+    try:
+        with open(filename, 'r', encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        return {"message":"Данные не удалось прочитать"}
+
+    for item in data:
+        if item["amount"] >= min_price: # если элемент равен или больше тому который ищем добавляем в список
+            expenses_product.append(item)
+    return expenses_product
+
+
+@app.get("/total")
+async def total(admin: str = Depends(verify_admin)):
+    filename = "expenses.json"
+    total_sum = 0
+
+    try:
+        with open(filename, 'r', encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        return "Не удалось прочитать файл"
+
+    for item in data:
+        total_sum += item["amount"] # добавляем в тотал сум сумму с каждой записи в json
+    return {"total_sum": total_sum}
