@@ -1,6 +1,4 @@
-from fastapi import FastAPI,Depends
-from sympy.integrals.meijerint_doc import category
-
+from fastapi import FastAPI,Depends, HTTPException
 from app.models import Expense, ExpenseCreate
 from app.auth import verify_admin
 import json
@@ -76,8 +74,9 @@ async def search(category: str):
     for item in data:
         if item["category"] == category: # если элемент равен тому который ищем добавляем в список
             filtered_expenses.append(item)
-    return filtered_expenses
 
+    if not filtered_expenses:
+        raise HTTPException(status_code=404, detail="Ничего не найдено")
 
 @app.get("/expenses")
 async def expenses(min_price: float):
@@ -92,6 +91,7 @@ async def expenses(min_price: float):
     for item in data:
         if item["amount"] >= min_price: # если элемент равен или больше тому который ищем добавляем в список
             expenses_product.append(item)
+        raise HTTPException(status_code=400, detail="Элемент меньше нужного значения")
     return expenses_product
 
 
@@ -109,3 +109,24 @@ async def total(admin: str = Depends(verify_admin)):
     for item in data:
         total_sum += item["amount"] # добавляем в тотал сум сумму с каждой записи в json
     return {"total_sum": total_sum}
+
+@app.delete("/delete")
+async def delete(id: int, admin: str = Depends(verify_admin)):
+    filename = "expenses.json"
+    try:
+        with open(filename, 'r', encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        return {"error": "Не удалось открыть файл"}
+
+    new_data = []
+    for item in data:
+        if item["id"] != id:
+            new_data.append(item)
+
+    if len(new_data) == len(data): # если длина нового списка такая же то айди не найдет
+        return {"message": "Запись с таким ID не найдена"}
+
+    with open(filename, 'w', encoding="utf-8") as f:
+        json.dump(new_data, f, ensure_ascii=False, indent=4) #
+    return {"message": f"Запись с id {id} успешно удалена"} # добавляем старые айди кроме того который нужно удалить
