@@ -2,6 +2,7 @@ import json
 from fastapi import Depends, HTTPException
 from app.auth import verify_admin
 from app.models import ExpenseCreate
+from app.models import ExpenseCreate
 
 
 def function_add(item: ExpenseCreate):
@@ -87,7 +88,10 @@ def function_expenses(min_price: float):
     for item in data:
         if item["amount"] >= min_price: # если элемент равен или больше тому который ищем добавляем в список
             expenses_product.append(item)
-        raise HTTPException(status_code=400, detail="Элемент меньше нужного значения")
+
+    if not expenses_product:
+        raise HTTPException(status_code=404, detail="Трат с такой ценой не найдено")
+
     return expenses_product
 
 
@@ -125,3 +129,35 @@ def function_delete(id: int, admin: str):
     with open(filename, 'w', encoding="utf-8") as f:
         json.dump(new_data, f, ensure_ascii=False, indent=4)  #
     return {"message": f"Запись с id {id} успешно удалена"}  # добавляем старые айди кроме того который нужно удалить
+
+def read_expenses():
+    filename = "expenses.json"
+    try:
+        with open(filename, 'r', encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+def save_expenses(data):
+    filename = "expenses.json"
+    with open(filename, 'w', encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+
+def function_update(id: int, updated_item: ExpenseCreate):
+    data = read_expenses()
+    found = False
+    updated_index = -1
+
+    for i in range(len(data)):
+        if data[i]["id"] == id:
+            new_data_dict = updated_item.model_dump() # Создаем словарь из новых данных
+            new_data_dict["id"] = id # Сохраняем старый ID, чтобы он не пропал
+            data[i] = new_data_dict # Заменяем старый объект в списке на новый
+            found = True
+            break
+    if not found:
+        raise HTTPException(status_code=404, detail="Запись не найдена")
+    # Сохраняем ВЕСЬ обновленный список
+    save_expenses(data)
+    return data[updated_index]

@@ -1,0 +1,8 @@
+[
+    {
+        "category": "string",
+        "amount": 35.0,
+        "is_important": false,
+        "id": 1
+    }
+]

@@ -2,7 +2,7 @@ from fastapi import FastAPI,Depends, HTTPException
 from app.models import Expense, ExpenseCreate
 from app.auth import verify_admin
 from app.database import (function_add, function_clear, function_stats, function_search, function_expenses,
-function_total, function_delete)
+                          function_total, function_delete, function_update)
 import json
 
 app = FastAPI()
@@ -38,3 +38,7 @@ async def total(admin: str = Depends(verify_admin)):
 @app.delete("/delete")
 async def delete(id: int, admin: str = Depends(verify_admin)):
     return function_delete(id,admin)
+
+@app.put("/expense/{id}")
+async def expenses(id: int, item: ExpenseCreate):
+    return function_update(id, item)
