@@ -6,6 +6,17 @@ from app.models import ExpenseCreate
 
 
 def function_add(item: ExpenseCreate):
+    if item.amount > 100000:
+        raise HTTPException(status_code=400, detail="Слишком большая сумма!")
+
+    if item.amount <= 0:
+        raise HTTPException(status_code=400, detail="Сумма должна быть больше 0!")
+
+    if item.category == "Еда" and item.amount > 500:
+        item.description = "Норм"
+    if item.amount == 1337:
+        item.description = "Elite"
+
     filename = "expenses.json"
     try:
         with open(filename, 'r', encoding="utf-8") as f:  # читаем файл
